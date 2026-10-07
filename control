@@ -1,0 +1,8 @@
+Package: com.research.nsurlhook
+Name: NSURLHook
+Version: 0.0.1
+Architecture: iphoneos-arm64
+Description: Objective-C NSURLSession network tracing tweak
+Maintainer: Research
+Author: Research
+Section: Tweaks
