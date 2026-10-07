@@ -1,0 +1,42 @@
+name: Build NSURLHook
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Theos
+        uses: Randomblock1/theos-action@v1
+        with:
+          theos-dir: theos
+          theos-src: https://github.com/theos/theos
+          theos-sdks: https://github.com/theos/sdks
+          theos-sdks-branch: master
+
+      - name: Build
+        run: |
+          export THEOS="$GITHUB_WORKSPACE/theos"
+          export PATH="$THEOS/bin:$PATH"
+
+          make clean
+          make package FINALPACKAGE=1
+
+      - name: Show package
+        run: |
+          find packages -type f -maxdepth 1 -print
+
+      - name: Upload package
+        uses: actions/upload-artifact@v4
+        with:
+          name: NSURLHook
+          path: packages/*.deb
+          if-no-files-found: error
