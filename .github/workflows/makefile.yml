@@ -51,7 +51,11 @@ jobs:
 
           echo "=== Theos ==="
           "$THEOS/bin/nic.pl" --version || true
-
+      - name: Install ldid
+        run: |
+          brew update
+          brew install ldid
+          ldid -V
       - name: Build
         run: |
           make clean
