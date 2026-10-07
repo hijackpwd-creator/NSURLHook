@@ -36,11 +36,6 @@ jobs:
           echo "THEOS=$GITHUB_WORKSPACE/theos" >> "$GITHUB_ENV"
           echo "$GITHUB_WORKSPACE/theos/bin" >> "$GITHUB_PATH"
 
-          echo "========================================"
-          echo "THEOS"
-          echo "========================================"
-          echo "$GITHUB_WORKSPACE/theos"
-
 
       # =========================================================
       # 3. Install iOS SDK
@@ -60,9 +55,7 @@ jobs:
             https://github.com/theos/sdks.git \
             theos-sdks
 
-          echo "========================================"
-          echo "Available SDKs"
-          echo "========================================"
+          echo "=== Available SDKs ==="
 
           find theos-sdks \
             -maxdepth 2 \
@@ -70,9 +63,7 @@ jobs:
             -name "*.sdk" \
             -print
 
-          echo "========================================"
-          echo "Copy SDKs"
-          echo "========================================"
+          echo "=== Copy SDKs ==="
 
           find theos-sdks \
             -maxdepth 2 \
@@ -80,9 +71,7 @@ jobs:
             -name "*.sdk" \
             -exec cp -R {} "$THEOS/sdks/" \;
 
-          echo "========================================"
-          echo "Installed SDKs"
-          echo "========================================"
+          echo "=== Installed SDKs ==="
 
           ls -lah "$THEOS/sdks"
 
@@ -95,44 +84,42 @@ jobs:
         run: |
           set -e
 
-          brew update
-
           brew install ldid
 
           echo "/opt/homebrew/bin" >> "$GITHUB_PATH"
 
           export PATH="/opt/homebrew/bin:$PATH"
 
-          echo "========================================"
-          echo "ldid"
-          echo "========================================"
+          echo "=== ldid ==="
 
           which ldid
 
           ldid -V || true
 
-          echo "========================================"
-          echo "ldid help"
-          echo "========================================"
-
-          ldid --help || true
-
 
       # =========================================================
-      # 5. Install packaging dependencies
+      # 5. Install packaging tools
+      #
+      # IMPORTANT:
+      # Do NOT install fakeroot on this arm64e build environment.
       # =========================================================
-      - name: Install packaging dependencies
+      - name: Install packaging tools
         shell: bash
         run: |
           set -e
 
-          brew install dpkg fakeroot xz
+          brew install dpkg xz
+
+          echo "=== packaging tools ==="
+
+          which dpkg
+          which xz
 
 
       # =========================================================
-      # 6. Verify build environment
+      # 6. Verify environment
       # =========================================================
-      - name: Verify build environment
+      - name: Verify environment
         shell: bash
         run: |
           set -e
@@ -154,7 +141,6 @@ jobs:
           which clang
           which ldid
           which dpkg
-          which fakeroot
 
           echo "========================================"
           echo "SDKs"
@@ -163,11 +149,15 @@ jobs:
           ls -lah "$THEOS/sdks"
 
           echo "========================================"
-          echo "Theos"
+          echo "Project files"
           echo "========================================"
 
-          test -d "$THEOS"
-          test -d "$THEOS/sdks"
+          test -f ./Makefile
+          test -f ./Tweak.xm
+          test -f ./NSURLHook.plist
+          test -f ./control
+
+          find . -maxdepth 2 -type f -print
 
 
       # =========================================================
@@ -194,20 +184,12 @@ jobs:
 
 
       # =========================================================
-      # 8. Verify generated dylib
+      # 8. Verify package
       # =========================================================
-      - name: Verify dylib
+      - name: Verify package
         shell: bash
         run: |
           set -e
-
-          echo "========================================"
-          echo "Generated files"
-          echo "========================================"
-
-          find .theos -type f \
-            \( -name "*.dylib" -o -name "*.deb" \) \
-            -print || true
 
           echo "========================================"
           echo "Packages"
@@ -218,9 +200,11 @@ jobs:
             -type f \
             -print
 
+          test -n "$(find packages -maxdepth 1 -name '*.deb' -print -quit)"
+
 
       # =========================================================
-      # 9. Upload Debian package
+      # 9. Upload DEB
       # =========================================================
       - name: Upload DEB
         uses: actions/upload-artifact@v4
@@ -231,12 +215,11 @@ jobs:
 
 
       # =========================================================
-      # 10. Upload dylib separately
+      # 10. Upload dylib
       # =========================================================
       - name: Upload dylib
         uses: actions/upload-artifact@v4
         with:
           name: NSURLHook-dylib
-          path: |
-            .theos/obj/NSURLHook.dylib
+          path: .theos/obj/NSURLHook.dylib
           if-no-files-found: error
